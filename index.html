@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İkimiz İçin Yavrum</title>
+    <style>
+        /* TEMEL STİLLER */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Georgia', serif;
+            background: #000;
+            color: white;
+            overflow-x: hidden;
+            /* Müzik başlatma etkileşimi için tıklanabilirliği işaret et */
+            cursor: pointer; 
+        }
+
+        /* SLAYT KONTEYNERI */
+        .slideshow {
+            width: 100%;
+            position: relative;
+        }
+
+        /* YENİ: Cross-Fade Slayt Geçişi */
+        .slide {
+            position: absolute; /* Tümü üst üste biner */
+            top: 0;
+            left: 0;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            opacity: 0; /* Başlangıçta hepsi gizli */
+            transition: opacity 1.5s ease-in-out; /* Yumuşak geçiş efekti */
+            z-index: 5;
+        }
+
+        .slide.active {
+            opacity: 1;
+            z-index: 10;
+        }
+
+        /* ANIMASYON RESETLEME/TETİKLEME */
+        /* Her slayt açıldığında içeriği yeniden canlandırmak için */
+        .slide .content-box > * {
+            animation: none;
+        }
+        .slide.active .opening-content h1 { animation: fadeInUp 2s ease-out 0.5s forwards; }
+        .slide.active .opening-content .quote { animation: fadeInUp 2s ease-out 1.5s forwards; }
+        .slide.active .letter-content .date { animation: fadeInUp 1s ease-out 0.3s forwards; }
+        .slide.active .letter-content p:nth-child(2) { animation-delay: 0.5s; animation: fadeInUp 1.5s ease-out 0.5s forwards; }
+        .slide.active .letter-content p:nth-child(3) { animation-delay: 1s; animation: fadeInUp 1.5s ease-out 1s forwards; }
+        .slide.active .letter-content p:nth-child(4) { animation-delay: 1.5s; animation: fadeInUp 1.5s ease-out 1.5s forwards; }
+        .slide.active .letter-content p:nth-child(5) { animation-delay: 2s; animation: fadeInUp 1.5s ease-out 2s forwards; }
+        .slide.active .letter-content .signature { animation: fadeInUp 2s ease-out 2.5s forwards; }
+        
+        .slide.active .question-content h2 { animation: fadeInUp 2s ease-out 0.5s forwards; }
+        .slide.active .question-content .subtext { animation: fadeInUp 2s ease-out 1.5s forwards; }
+
+        .slide.active .poem-content .verse:nth-child(1) { animation: fadeInUp 2s ease-out 0.5s forwards; }
+        .slide.active .poem-content .verse:nth-child(2) { animation: fadeInUp 2s ease-out 1.5s forwards; }
+        .slide.active .poem-content .verse:nth-child(3) { animation: fadeInUp 2s ease-out 2.5s forwards; }
+        .slide.active .poem-content .verse:nth-child(4) { animation: fadeInUp 2s ease-out 3.5s forwards; }
+
+        .slide.active .longing-content h2 { animation: fadeInUp 2s ease-out 0.5s forwards; }
+        .slide.active .longing-content .text:nth-child(2) { animation: fadeInUp 2s ease-out 1s forwards; }
+        .slide.active .longing-content .text:nth-child(3) { animation: fadeInUp 2s ease-out 1.5s forwards; }
+        .slide.active .longing-content .text:nth-child(4) { animation: fadeInUp 2s ease-out 2s forwards; }
+        .slide.active .longing-content .text:nth-child(5) { animation: fadeInUp 2s ease-out 2.5s forwards; }
+
+        .slide.active .closing-content h1 { animation: fadeInUp 2s ease-out 0.5s forwards; }
+        .slide.active .closing-content .final-words:nth-child(2) { animation: fadeInUp 2s ease-out 1s forwards; }
+        .slide.active .closing-content .final-words:nth-child(3) { animation: fadeInUp 2s ease-out 1.5s forwards; }
+        .slide.active .closing-content .final-words:nth-child(4) { animation: fadeInUp 2s ease-out 2s forwards; }
+        .slide.active .closing-content .final-words:nth-child(5) { animation: fadeInUp 2s ease-out 2.5s forwards; }
+        .slide.active .closing-content .heart { animation: heartbeat 3s ease-in-out 3.5s infinite; }
+        .slide.active .whatsapp-btn { animation: fadeInUp 2s ease-out 4s forwards; }
+
+        /* ARKA PLANLAR */
+        .opening { background: radial-gradient(circle at center, #1a1a2e, #000); }
+        .letter-slide { background: radial-gradient(circle at center, #16213e, #000); }
+        .question-slide { background: radial-gradient(circle at center, #1a1a2e, #000); }
+        .poem-slide { background: radial-gradient(circle at center, #0f3460, #000); }
+        .longing-slide { background: radial-gradient(circle at center, #1a1a2e, #000); }
+        .closing-slide { background: radial-gradient(circle at center, #0f3460, #000); }
+        /* ... Geri kalan CSS stilleri (fontlar, boyutlar, animasyonlar, mobil uyumluluk vb.) aynı kalmıştır. */
+        
+        .particles {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: float 8s infinite;
+        }
+
+        @keyframes float {
+            0% { 
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.8; }
+            100% { 
+                transform: translateY(-100px) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        .content-box {
+            max-width: 900px;
+            text-align: center;
+            padding: 40px;
+            background: rgba(0, 0, 0, 0.4); 
+            border-radius: 15px;
+            box-shadow: 0 0 50px rgba(15, 52, 96, 0.5); 
+        }
+
+        .opening-content h1 {
+            font-size: 4em;
+            margin-bottom: 40px;
+            font-weight: 300;
+            letter-spacing: 3px;
+            opacity: 0;
+        }
+
+        .opening-content .quote {
+            font-size: 1.8em;
+            font-style: italic;
+            line-height: 1.8;
+            opacity: 0;
+            color: rgba(255,255,255,0.9);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .letter-content {
+            max-width: 800px;
+            padding: 60px 40px;
+            text-align: left;
+        }
+        .letter-content .date {
+            font-size: 1.2em;
+            opacity: 0.6;
+            margin-bottom: 40px;
+            opacity: 0;
+        }
+        .letter-content p {
+            font-size: 1.4em;
+            line-height: 2.2;
+            margin-bottom: 30px;
+            opacity: 0;
+        }
+        .letter-content .signature {
+            text-align: right;
+            font-size: 1.6em;
+            margin-top: 60px;
+            font-style: italic;
+            opacity: 0;
+        }
+
+        .question-content {
+            text-align: center;
+            padding: 60px 40px;
+            max-width: 900px;
+        }
+        .question-content h2 {
+            font-size: 3em;
+            font-weight: 300;
+            line-height: 1.6;
+            opacity: 0;
+        }
+        .question-content .subtext {
+            font-size: 1.3em;
+            margin-top: 40px;
+            opacity: 0;
+            font-style: italic;
+            color: rgba(255,255,255,0.7);
+        }
+
+        .poem-content {
+            text-align: center;
+            padding: 60px 40px;
+            max-width: 800px;
+        }
+        .poem-content .verse {
+            font-size: 1.6em;
+            line-height: 2.2;
+            margin-bottom: 40px;
+            opacity: 0;
+            font-style: italic;
+        }
+
+        .longing-content {
+            text-align: center;
+            padding: 60px 40px;
+            max-width: 900px;
+        }
+        .longing-content h2 {
+            font-size: 2.8em;
+            margin-bottom: 50px;
+            font-weight: 300;
+            opacity: 0;
+        }
+        .longing-content .text {
+            font-size: 1.5em;
+            line-height: 2.2;
+            margin-bottom: 35px;
+            opacity: 0;
+        }
+
+        .closing-content {
+            text-align: center;
+            padding: 60px 40px;
+            max-width: 900px;
+        }
+        .closing-content h1 {
+            font-size: 3.5em;
+            margin-bottom: 50px;
+            font-weight: 300;
+            opacity: 0;
+        }
+        .closing-content .final-words {
+            font-size: 1.6em;
+            line-height: 2;
+            margin-bottom: 30px;
+            opacity: 0;
+        }
+
+        .closing-content .heart {
+            font-size: 3em; /* Yazıyı sığdırmak için küçültüldü */
+            margin: 50px 0;
+            opacity: 0;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 0.8;
+            }
+            50% { 
+                transform: scale(1.15);
+                opacity: 1;
+            }
+        }
+
+        .whatsapp-btn {
+            display: inline-block;
+            margin-top: 40px;
+            padding: 18px 45px;
+            background: linear-gradient(135deg, #FF69B4, #8B0000); /* Duygusal renkler: Pembe/Bordo */
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.4em;
+            font-weight: bold;
+            transition: all 0.4s ease;
+            box-shadow: 0 10px 30px rgba(255, 105, 180, 0.5);
+            opacity: 0;
+        }
+
+        .whatsapp-btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(255, 105, 180, 0.8);
+            background: linear-gradient(135deg, #8B0000, #FF69B4);
+        }
+
+        .whatsapp-btn:active {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 15px 35px;
+            font-size: 1.1em;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            font-family: 'Georgia', serif;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.4);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .progress {
+            position: fixed;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 9999;
+        }
+
+        .progress-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transition: all 0.5s ease;
+            cursor: pointer;
+        }
+
+        .progress-dot.active {
+            background: white;
+            width: 30px;
+            border-radius: 5px;
+        }
+
+        .auto-indicator {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            z-index: 9999;
+            border: 1px solid rgba(255,255,255,0.2);
+            display: none;
+        }
+
+        .auto-indicator.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .opening-content h1 { font-size: 2.5em; }
+            .opening-content .quote { font-size: 1.3em; }
+            .letter-content p { font-size: 1.2em; }
+            .question-content h2 { font-size: 2em; }
+            .poem-content .verse { font-size: 1.3em; }
+            .longing-content h2 { font-size: 2em; }
+            .longing-content .text { font-size: 1.2em; }
+            .closing-content h1 { font-size: 2.5em; }
+            .closing-content .final-words { font-size: 1.3em; }
+            .whatsapp-btn { font-size: 1.2em; padding: 10px 35px; }
+            .nav-btn { padding: 12px 25px; font-size: 1em; }
+            .content-box { padding: 20px; }
+        }
+    </style>
+</head>
+<body onclick="startMusicOnInteraction()">
+    
+    <audio id="bgMusic" src="duygusal_fon_muzigi.mp3" preload="auto" loop></audio>
+
+    <div class="particles" id="particles"></div>
+
+    <div class="progress" id="progress"></div>
+
+    <div class="auto-indicator" id="autoIndicator">
+        Otomatik geçiş: <span id="timer">8</span>s
+    </div>
+
+    <div class="slideshow">
+
+        <div class="slide opening active">
+            <div class="content-box opening-content">
+                <h1>İkimiz İçin</h1>
+                <p class="quote">
+                    "Bazen iki kırık kalp,<br>
+                    birbirini anlamak için buluşur."
+                </p>
+            </div>
+        </div>
+
+        <div class="slide letter-slide">
+            <div class="content-box letter-content">
+                <div class="date">Bugün, şimdi...</div>
+                <p>Biliyorum ikimiz de acı çektik. İkimiz de kırıldık, ikimiz de yara aldık.</p>
+                <p>Senin yaralarını görebiliyorum. Çünkü benimkiler de aynı yerde. Belki farklı insanlardan, farklı zamanlarda... Ama acı, hep acı.</p>
+                <p>Ve belki de bu yüzden birbirimizi bu kadar iyi anlıyoruz. Çünkü ikimiz de ne demek olduğunu biliyoruz: Kırılmak, yaralanmak, ama yine de ayakta kalmaya çalışmak.</p>
+            </div>
+        </div>
+
+        <div class="slide question-slide">
+            <div class="content-box question-content">
+                <h2>İkimiz de biliyoruz ki<br>bu kolay değil</h2>
+                <p class="subtext">Ama belki de birlikte daha kolay olabilir...</p>
+            </div>
+        </div>
+
+        <div class="slide poem-slide">
+            <div class="content-box poem-content">
+                <div class="verse">
+                    "İki kırık parça,<br>
+                    Birbirini tamamlayabilir mi?"
+                </div>
+                <div class="verse">
+                    "Belki mükemmel olmayız,<br>
+                    Belki hala çatlaklar olacak..."
+                </div>
+                <div class="verse">
+                    "Ama en azından,<br>
+                    Yalnız olmayız."
+                </div>
+                <div class="verse">
+                    "Ve belki bu, yeterli."
+                </div>
+            </div>
+        </div>
+
+        <div class="slide letter-slide">
+            <div class="content-box letter-content">
+                <p>Sana yalan söylemeyeceğim: Hala korkuyorum. Hala içimde yaralar var.</p>
+                <p>Ve biliyorum ki senin de var. İkimiz de geçmişimizden birer parça taşıyoruz. Bazen o parçalar ağır geliyor, bazen ayağımıza dolanıyor.</p>
+                <p>Ama işte şu an buradayım. Sen de buradasın. Ve bu bir şey ifade ediyor.</p>
+                <p>Belki mükemmel olamayacağız. Belki bazen kavga edeceğiz, bazen anlaşamayacağız. Ama en azından dürüst olacağız.</p>
+                <div class="signature">İçtenlikle...</div>
+            </div>
+        </div>
+
+        <div class="slide longing-slide">
+            <div class="content-box longing-content">
+                <h2>Belki İkimize De Bir Şans Lazım</h2>
+                <p class="text">Kendimize bir şans...</p>
+                <p class="text">Birbirimize bir şans...</p>
+                <p class="text">Yeniden hissetmeye bir şans...</p>
+                <p class="text">Ve onca olamayanlara inat bir şans.</p>
+            </div>
+        </div>
+
+        <div class="slide question-slide">
+            <div class="content-box question-content">
+                <h2>Ya denesek?</h2>
+                <p class="subtext">Kırık kalplerimizle, yaralı ruhumuzla...<br>Ama birlikte.</p>
+            </div>
+        </div>
+
+        <div class="slide letter-slide">
+            <div class="content-box letter-content">
+                <p>Biliyorum hala çok şey belirsiz. Biliyorum ikimiz de koruyoruz kendimizi.</p>
+                <p>Ama belki de tam da bu yüzden birbirimizi anlayabiliriz. Çünkü ikimiz de biliyoruz ne demek olduğunu: Güvenmeye çalışmak, ama korkuyla...</p>
+                <p>Sen benden bir şeyler istiyorsun. Ben de senden bir şeyler istiyorum. Belki ikimiz de istediğimiz şeyi veremeyiz hemen. Ama deneyebiliriz.</p>
+                <p>Adım adım. Yavaşça. Birlikte.</p>
+            </div>
+        </div>
+
+        <div class="slide poem-slide">
+            <div class="content-box poem-content">
+                <div class="verse">
+                    "Belki ikimiz de hata yaparız,<br>
+                    Belki ikimiz de düşeriz..."
+                </div>
+                <div class="verse">
+                    "Ama bu sefer,<br>
+                    Biri tutacak elimizden..."
+                </div>
+                <div class="verse">
+                    "Bu sefer, yalnız değiliz.<br>
+                    Bu sefer, ikimiz varız."
+                </div>
+                <div class="verse">
+                    "Ve belki, sadece belki...<br>
+                    Zaman bizden fazlasını almaz..."
+                </div>
+            </div>
+        </div>
+
+        <div class="slide closing-slide">
+            <div class="content-box closing-content">
+                <h1>İkimiz İçin...</h1>
+                <p class="final-words">Kırıklarımızla, yaralarımızla...</p>
+                <p class="final-words">Korkularımızla, umutlarımızla...</p>
+                <p class="final-words">Hep birlikte, adım adım.</p>
+                <p class="final-words">Çünkü belki ikimiz de bunu hak ediyoruz.</p>
+                <div class="heart">İyi Ki Suay Yiğit(ÇAKIR)</div>
+                <a href="https://wa.me/905346921987?text=Seni%20seviyorum%20firavun%20faresi%20%E2%9D%A4%EF%B8%8F" target="_blank" class="whatsapp-btn">
+                    💬 Bana Tıkla..
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← Geri</button>
+        <button class="nav-btn" id="playBtn" onclick="toggleAutoPlay()">⏸ Durdur</button> 
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">İleri →</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        let autoPlayInterval;
+        let timerInterval;
+        let isAutoPlaying = false; 
+        let timeLeft = 8;
+        let musicStarted = false; // Müzik kontrolü için yeni değişken
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const music = document.getElementById('bgMusic');
+        
+        // Müzik Başlatma Fonksiyonu (Kullanıcı etkileşimi sonrası)
+        function startMusicOnInteraction() {
+            if (!musicStarted) {
+                music.play().then(() => {
+                    musicStarted = true;
+                    // Tıklamayla müzik başladığında otomatik oynatmayı da başlat
+                    if (!isAutoPlaying) {
+                        toggleAutoPlay();
+                    }
+                }).catch(error => {
+                    console.log("Müzik çalma engellendi: " + error);
+                    // Ses simgesi gösterilebilir
+                });
+            }
+        }
+
+        // Parçacıkları oluştur
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 8 + 's';
+                particle.style.animationDuration = (Math.random() * 5 + 5) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        // İlerleme göstergelerini oluştur
+        function createProgress() {
+            const container = document.getElementById('progress');
+            for (let i = 0; i < totalSlides; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'progress-dot';
+                if (i === 0) dot.classList.add('active');
+                dot.onclick = () => goToSlide(i);
+                container.appendChild(dot);
+            }
+        }
+
+        // Slayt göster
+        function showSlide(n) {
+            slides.forEach(s => s.classList.remove('active'));
+            
+            if (n >= totalSlides) currentSlide = 0;
+            else if (n < 0) currentSlide = totalSlides - 1;
+            else currentSlide = n;
+            
+            slides[currentSlide].classList.add('active');
+            
+            // İlerleme güncelle
+            const dots = document.querySelectorAll('.progress-dot');
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === currentSlide);
+            });
+            
+            // Butonları güncelle
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+            
+            resetTimer();
+
+            // Son slayta gelindiğinde otomatik oynatmayı durdur
+            if (currentSlide === totalSlides - 1) {
+                stopAutoPlay();
+            }
+        }
+
+        // Slayt değiştir
+        function changeSlide(direction) {
+            showSlide(currentSlide + direction);
+        }
+
+        // Belirli slayta git
+        function goToSlide(n) {
+            showSlide(n);
+        }
+
+        // Otomatik oynatma
+        function startAutoPlay() {
+            startMusicOnInteraction(); // Otomatik oynatma başlarken müziği de başlat
+            if (autoPlayInterval) clearInterval(autoPlayInterval);
+            if (timerInterval) clearInterval(timerInterval);
+
+            isAutoPlaying = true;
+            document.getElementById('playBtn').innerHTML = '⏸ Durdur';
+            
+            autoPlayInterval = setInterval(() => {
+                if (currentSlide < totalSlides - 1) {
+                    changeSlide(1);
+                } else {
+                    stopAutoPlay();
+                }
+            }, 8000); // 8 saniyede bir
+
+            startTimer();
+        }
+
+        function stopAutoPlay() {
+            if (autoPlayInterval) clearInterval(autoPlayInterval);
+            if (timerInterval) clearInterval(timerInterval);
+            document.getElementById('autoIndicator').classList.remove('show');
+            isAutoPlaying = false;
+            document.getElementById('playBtn').innerHTML = '▶ Başlat';
+        }
+
+        function toggleAutoPlay() {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+            } else {
+                startAutoPlay();
+            }
+        }
+
+        // Zamanlayıcı
+        function startTimer() {
+            const indicator = document.getElementById('autoIndicator');
+            const timerEl = document.getElementById('timer');
+            indicator.classList.add('show');
+            timeLeft = 8;
+            timerEl.textContent = timeLeft;
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    timeLeft = 8;
+                    timerEl.textContent = timeLeft;
+                }
+            }, 1000);
+        }
+
+        function resetTimer() {
+            timeLeft = 8;
+            const timerEl = document.getElementById('timer');
+            if (timerEl) timerEl.textContent = timeLeft;
+        }
+
+        // Klavye kontrolleri
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+            if (e.key === ' ') {
+                e.preventDefault();
+                toggleAutoPlay();
+            }
+        });
+
+        // Sayfa yüklenince
+        window.onload = function() {
+            createParticles();
+            createProgress();
+            showSlide(0);
+            
+            // Sayfa açıldığında otomatik oynatmayı başlat (Kullanıcı ilk etkileşimde müziği başlatmalı)
+            // Tarayıcı kısıtlamaları nedeniyle müzik ilk tıklamada çalışacak
+            document.getElementById('playBtn').innerHTML = '▶ Başlat';
+            isAutoPlaying = false; // Başlangıçta kapalı
+        };
+    </script>
+</body>
+</html>
